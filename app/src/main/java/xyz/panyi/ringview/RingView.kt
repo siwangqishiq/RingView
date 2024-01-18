@@ -37,8 +37,8 @@ class RingView : View {
     }
 
     companion object{
-        const val RING_COUNT = 8
-        const val UPDATE_SPEED = 0.025f
+        const val RING_COUNT = 32
+        val UPDATE_SPEED = 0.025f
         const val CONTENT_SCALE = 0.75f
         const val N = 3
 
@@ -73,17 +73,17 @@ class RingView : View {
 
     private val mCirclePaint : Paint = Paint()
 
-    private var mRingColor:Int = Color.BLUE
+    private var mRingColor:Int = Color.argb(0.1f , 1.0f , 1.0f , 1.0f)
 
     private var mCycleTimes:Int = 0
 
     private val mRingDataList = ArrayList<RingData>(4)
 
     private fun initView(context: Context?){
-        mCirclePaint.color = Color.argb(1.0f , 1.0f , 1.0f , 1.0f)
-        mCirclePaint.strokeWidth = 40.0f;
+        mCirclePaint.color = mRingColor
+        mCirclePaint.strokeWidth = 30.0f;
         mCirclePaint.style = Paint.Style.STROKE
-        mCirclePaint.maskFilter = BlurMaskFilter(mCirclePaint.strokeWidth , BlurMaskFilter.Blur.SOLID)
+        mCirclePaint.maskFilter = BlurMaskFilter(mCirclePaint.strokeWidth * 2.0f , BlurMaskFilter.Blur.NORMAL)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -103,7 +103,11 @@ class RingView : View {
 //            radius += rnd(-0.2f * radius ,0.05f* radius)
 //            paint.color = mRingColor
 //            paint.color = Color.argb(rnd(0.5f , 1.0f) , rnd(0.0f , 1.0f) , rnd(0.0f , 1.0f)  , rnd(0.0f , 1.0f))
-            paint.color = Color.argb(rnd( 32,255) , mRingColor.red , mRingColor.green , mRingColor.blue );
+            val intenseValue = rnd(0.6f , 1.0f)
+            paint.color = Color.argb(1.0f ,
+                intenseValue * (mRingColor.red / 255.0f) ,
+                intenseValue * (mRingColor.green / 255.0f) ,
+                intenseValue * (mRingColor.blue / 255.0f) );
 
             paint.style = Paint.Style.STROKE
 //            paint.strokeWidth = rnd(mCirclePaint.strokeWidth / 8.0f , mCirclePaint.strokeWidth / 2.0f)
@@ -113,8 +117,8 @@ class RingView : View {
 
 //            rotateAngle = rnd(0.0f, (Math.PI).toFloat())
             rotateAngle = startAngleRad
-            rotateSpeed = rnd((-Math.PI / 180.0f).toFloat(), (Math.PI / 180.0f).toFloat())
-//            rotateSpeed = rnd(0.0f, (Math.PI / 90.0f).toFloat())
+//            rotateSpeed = rnd((-Math.PI / 180.0f).toFloat(), (Math.PI / 180.0f).toFloat())
+            rotateSpeed = rnd(0.0f, (Math.PI / 90.0f).toFloat())
 //            rotateSpeed =  (Math.PI / 90.0f).toFloat()
 //            println("rotateAngel = $rotateAngle")
         }
@@ -141,8 +145,8 @@ class RingView : View {
         for(item in mRingDataList){
             renderRing(canvas , item)
         }//end for each
-//         renderNormalCircle(canvas)
-         invalidate()
+        renderNormalCircle(canvas)
+        invalidate()
 
         if(mTime >= Math.PI){
             mCycleTimes++
@@ -156,7 +160,7 @@ class RingView : View {
      * 一轮周期结束
      */
     protected fun onOneCycleEnd(){
-        resetRingsData()
+//        resetRingsData()
     }
 
     private fun renderNormalCircle(canvas:Canvas?){
@@ -188,8 +192,8 @@ class RingView : View {
             reset()
             for(i  in 0 until  step){
                 val currentAngle = deltaAngle * i
-                var x = 0.0f
-                var y = 0.0f
+                var x:Float
+                var y:Float
                 if(itemData.shapeType == SHAPE_ONE){
                     x = (itemData.radius + currentA * cos(currentAngle * N).toFloat()) * (cos(currentAngle).toFloat())
                     y = (itemData.radius + currentA * cos(currentAngle * N).toFloat()) * (sin(currentAngle).toFloat())
