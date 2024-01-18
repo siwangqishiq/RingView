@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId "xyz.panyi.ringview"
-        minSdk 24
+        minSdk 26
         targetSdk 33
         versionCode 1
         versionName "1.0"
