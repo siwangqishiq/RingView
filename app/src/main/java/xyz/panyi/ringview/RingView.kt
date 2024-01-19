@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RectF
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
@@ -16,6 +17,7 @@ import java.util.Random
 import java.util.logging.LogManager
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 /**
  * Ring View
@@ -37,13 +39,21 @@ class RingView : View {
     }
 
     companion object{
-        const val RING_COUNT = 32
-        val UPDATE_SPEED = 0.025f
+        const val STATE_RING = 0
+        const val STATE_ROUND_RECT = 1
+        const val STATE_SHOW_LOGO = 2
+        const val STATE_RECT_ROUND = 3
+
+        const val STOKEN_WIDTH = 30.0f
+
+        const val RING_COUNT = 16
+        val UPDATE_SPEED = 0.04f
         const val CONTENT_SCALE = 0.75f
         const val N = 3
 
         const val SHAPE_ONE = 1
         const val SHAPE_TWO = 2
+
 
         private val random = Random()
         fun rnd(start:Float , end:Float) = start + random.nextFloat() * (end - start)
@@ -67,28 +77,65 @@ class RingView : View {
     )//end inner class
 
 
-    private var mState:Int = 0
+    private var mState:Int = STATE_RING
     private var mTime:Float = 0.0f
     private var mDeltaTime = 0.0f
 
     private val mCirclePaint : Paint = Paint()
 
-    private var mRingColor:Int = Color.argb(0.1f , 1.0f , 1.0f , 1.0f)
+    private var mRingColor:Int = Color.argb(1.0f , 1.0f , 1.0f , 1.0f)
 
     private var mCycleTimes:Int = 0
 
     private val mRingDataList = ArrayList<RingData>(4)
 
+    private val mRoundRectPaint : Paint = Paint()
+
+    private var mRoundRectRadius = 0.0f
+    private var mRoundRectMinRadius = 0.0f
+    private var mRoundRectMaxRadius = 0.0f
+    private val mRoundRect : RectF = RectF()
+
     private fun initView(context: Context?){
-        mCirclePaint.color = mRingColor
-        mCirclePaint.strokeWidth = 30.0f;
-        mCirclePaint.style = Paint.Style.STROKE
-        mCirclePaint.maskFilter = BlurMaskFilter(mCirclePaint.strokeWidth * 2.0f , BlurMaskFilter.Blur.NORMAL)
+        initMainCircle()
+        initRoundRect()
+    }
+
+    private fun initMainCircle(){
+        mCirclePaint.apply {
+            color = mRingColor
+            strokeWidth = STOKEN_WIDTH
+            style = Paint.Style.STROKE
+            maskFilter = BlurMaskFilter(mCirclePaint.strokeWidth , BlurMaskFilter.Blur.SOLID)
+        }
+    }
+
+    private fun initRoundRect(){
+        mRoundRectPaint.apply {
+            color = mRingColor
+            strokeWidth = STOKEN_WIDTH
+            style = Paint.Style.STROKE
+            maskFilter = BlurMaskFilter(mCirclePaint.strokeWidth , BlurMaskFilter.Blur.SOLID)
+        }
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         resetRingsData()
+        resetRoundRectShapeData()
+    }
+
+    private fun resetRoundRectShapeData(){
+        val rectWidth =  measuredWidth * CONTENT_SCALE
+        val rectHeight = measuredHeight * CONTENT_SCALE
+
+        val left = measuredWidth  / 2.0f - rectWidth / 2.0f
+        val top = measuredHeight / 2.0f - rectHeight / 2.0f
+        mRoundRect.set(left , top , left + rectWidth  , top + rectHeight)
+
+        mRoundRectRadius = rectWidth / 2.0f;
+        mRoundRectMaxRadius = mRoundRectRadius
+        mRoundRectMinRadius = mRoundRectRadius / 2.0f;
     }
 
     private fun buildRingData(viewWidth : Int, viewHeight: Int , startAngleRad : Float) : RingData{
@@ -111,7 +158,7 @@ class RingView : View {
 
             paint.style = Paint.Style.STROKE
 //            paint.strokeWidth = rnd(mCirclePaint.strokeWidth / 8.0f , mCirclePaint.strokeWidth / 2.0f)
-            paint.strokeWidth = mCirclePaint.strokeWidth / 2.0f
+            paint.strokeWidth = mCirclePaint.strokeWidth / 4.0f
              paint.maskFilter = BlurMaskFilter(paint.strokeWidth , BlurMaskFilter.Blur.NORMAL)
             A = radius * rnd(0.05f, 0.2f)
 
@@ -137,30 +184,83 @@ class RingView : View {
     }
 
     override fun onDraw(canvas: Canvas?) {
-        drawRingsView(canvas)
+        mTime += UPDATE_SPEED
+
+        when(mState){
+            STATE_RING ->{
+                drawRingsView(canvas)
+            }
+            STATE_ROUND_RECT -> {
+                drawCircleToRect(canvas)
+            }
+            STATE_SHOW_LOGO -> {
+                drawLogo(canvas)
+            }
+            STATE_RECT_ROUND -> {
+                drawRectToCircle(canvas)
+            }
+        }//end when
+    }
+
+    private fun drawCircleToRect(canvas:Canvas?){
+        val A = (mRoundRectMaxRadius - mRoundRectMinRadius )
+        val radius =A * cos(mTime / 2.0f) + mRoundRectMinRadius
+        canvas?.drawRoundRect(mRoundRect , radius, radius, mRoundRectPaint)
+        invalidate()
+
+        if(mTime >= Math.PI){
+            mState = STATE_SHOW_LOGO
+            mTime = 0.0f
+        }
+    }
+
+    private fun drawLogo(canvas:Canvas?){
+        canvas?.drawRoundRect(mRoundRect , mRoundRectMinRadius, mRoundRectMinRadius, mRoundRectPaint)
+        invalidate()
+
+        if(mTime >= Math.PI){
+            mState = STATE_RECT_ROUND
+            mTime = 0.0f
+        }
+    }
+
+    private fun drawRectToCircle(canvas:Canvas?){
+        val A = (mRoundRectMaxRadius - mRoundRectMinRadius )
+        val radius =A * sin(mTime / 2.0f) + mRoundRectMinRadius
+        canvas?.drawRoundRect(mRoundRect , radius, radius, mRoundRectPaint)
+        invalidate()
+
+        if(mTime >= Math.PI){
+            mState = STATE_RING
+            mTime = 0.0f
+        }
     }
 
     private fun drawRingsView(canvas:Canvas?){
-        mTime += UPDATE_SPEED
         for(item in mRingDataList){
             renderRing(canvas , item)
         }//end for each
         renderNormalCircle(canvas)
         invalidate()
 
-        if(mTime >= Math.PI){
+        if(mTime >= 2 * Math.PI){
             mCycleTimes++
             mTime = 0.0f
-//            println("mCycleTimes = $mCycleTimes")
             onOneCycleEnd()
         }
     }
 
     /**
-     * 一轮周期结束
+     *
+     * 周期结束
      */
     protected fun onOneCycleEnd(){
 //        resetRingsData()
+//        if(mCycleTimes == 1){
+//            mState = STATE_ROUND_RECT
+//        }
+
+        mState = STATE_ROUND_RECT
     }
 
     private fun renderNormalCircle(canvas:Canvas?){
