@@ -83,7 +83,7 @@ class RingView : View {
 
     private val mCirclePaint : Paint = Paint()
 
-    private var mRingColor:Int = Color.argb(1.0f , 1.0f , 1.0f , 1.0f)
+    private var mRingColor:Int = Color.YELLOW
 
     private var mCycleTimes:Int = 0
 
@@ -133,9 +133,9 @@ class RingView : View {
         val top = measuredHeight / 2.0f - rectHeight / 2.0f
         mRoundRect.set(left , top , left + rectWidth  , top + rectHeight)
 
-        mRoundRectRadius = rectWidth / 2.0f;
-        mRoundRectMaxRadius = mRoundRectRadius
-        mRoundRectMinRadius = mRoundRectRadius / 2.0f;
+        mRoundRectRadius = rectWidth / 2.0f
+        mRoundRectMaxRadius = rectWidth / 2.0f
+        mRoundRectMinRadius = rectWidth / 4.0f;
     }
 
     private fun buildRingData(viewWidth : Int, viewHeight: Int , startAngleRad : Float) : RingData{
@@ -206,6 +206,10 @@ class RingView : View {
         val A = (mRoundRectMaxRadius - mRoundRectMinRadius )
         val radius =A * cos(mTime / 2.0f) + mRoundRectMinRadius
         canvas?.drawRoundRect(mRoundRect , radius, radius, mRoundRectPaint)
+
+        val edgePath = Path()
+
+
         invalidate()
 
         if(mTime >= Math.PI){
